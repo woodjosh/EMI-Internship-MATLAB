@@ -2,94 +2,99 @@
 % Script for importing data from a bag file
 
 %% Parameters, change these to match those used to record data
-models = ["waffleADX","waffle3DM","waffleEG120","waffleEG1300"]; 
-location = "house"; 
-have_vis = true; 
-
-for model = models
-    %% Select topic from rosbag and import it as a timeseries 
-    rosbag1 = rosbag(sprintf("/home/josh/catkin_ws/src/my_pkgs/outputs/%s_%s_out.bag",location,model));
-    rosbag_gnd = select(rosbag1,'Topic','localization/gnd_truth'); 
-    rosbag_vio = select(rosbag1,'Topic','localization/vio');
-    rosbag_imu = select(rosbag1,'Topic','localization/imu');
-    if have_vis    
+models = ["waffleADX"];%,"waffle3DM","waffleEG120","waffleEG1300"]; 
+locations = ["house_0.6amb","house_0.65amb","house_0.7amb","house_0.75amb","house_0.8amb" ]; 
+for location = locations
+    for model = models
+        have_vis = true; 
+        %% Select topic from rosbag and import it as a timeseries 
+        rosbag1 = rosbag(sprintf("/home/josh/catkin_ws/src/my_pkgs/outputs/%s_%s_out.bag",location,model));
+        rosbag_gnd = select(rosbag1,'Topic','localization/gnd_truth'); 
+        rosbag_vio = select(rosbag1,'Topic','localization/vio');
+        rosbag_imu = select(rosbag1,'Topic','localization/imu');
         rosbag_vis = select(rosbag1,'Topic','localization/orbslam');
-    end
+
+        if rosbag_vis.NumMessages == 0
+           have_vis = false;  
+        end
         
-    suffix = ["gnd","vio","imu","vis"]; 
-    ts = struct; 
-    
-    ts.(suffix(1)) = timeseries(rosbag_gnd,'Pose.Pose.Position.X','Pose.Pose.Position.Y');  
-    ts.(suffix(2)) = timeseries(rosbag_vio,'Pose.Pose.Position.X','Pose.Pose.Position.Y'); 
-    ts.(suffix(3)) = timeseries(rosbag_imu,'Pose.Pose.Position.X','Pose.Pose.Position.Y'); 
-    if have_vis
-        ts.(suffix(4)) = timeseries(rosbag_vis,'Pose.Pose.Position.X','Pose.Pose.Position.Y');  
-    else 
-        ts.(suffix(4)) = timeseries(zeros(1,10),ones(1,10)*ts.(suffix(1)).Time(1)); 
-    end
-    
-    %% Adjust time so it starts at 0
-    start = ts.(suffix(1)).Time(1); 
-    ts.(suffix(1)).Time = ts.(suffix(1)).Time-start;
-    ts.(suffix(2)).Time = ts.(suffix(2)).Time-start;
-    ts.(suffix(3)).Time = ts.(suffix(3)).Time-start; 
-    ts.(suffix(4)).Time = ts.(suffix(4)).Time-start;  
-    %% Clear temporary variables
-    clearvars -except ts suffix model location have_vis
+        suffix = ["gnd","vio","imu","vis"]; 
+        
+        ts = struct; 
 
-    %% Resample to get matching time vectors 
-    for s = suffix(2:size(suffix,2))
-        [ts.(sprintf('gnd_resample_%s',s)),ts.(sprintf('%s_resample',s))] ...
-            = synchronize(ts.gnd, ts.(s),'Union');
-    end
+        ts.(suffix(1)) = timeseries(rosbag_gnd,'Pose.Pose.Position.X','Pose.Pose.Position.Y');  
+        ts.(suffix(2)) = timeseries(rosbag_vio,'Pose.Pose.Position.X','Pose.Pose.Position.Y'); 
+        ts.(suffix(3)) = timeseries(rosbag_imu,'Pose.Pose.Position.X','Pose.Pose.Position.Y'); 
+        if have_vis
+            ts.(suffix(4)) = timeseries(rosbag_vis,'Pose.Pose.Position.X','Pose.Pose.Position.Y');  
+        else 
+            ts.(suffix(4)) = timeseries(zeros(1,10),ones(1,10)*ts.(suffix(1)).Time(1)); 
+        end
+        
+        
+        %% Adjust time so it starts at 0
+        start = ts.(suffix(1)).Time(1); 
+        ts.(suffix(1)).Time = ts.(suffix(1)).Time-start;
+        ts.(suffix(2)).Time = ts.(suffix(2)).Time-start;
+        ts.(suffix(3)).Time = ts.(suffix(3)).Time-start; 
+        ts.(suffix(4)).Time = ts.(suffix(4)).Time-start;  
+        %% Clear temporary variables
+        clearvars -except ts suffix model location have_vis models
 
-    %% Calculate RMSE 
-    rmse = struct;  
-    for s = suffix(2:size(suffix,2)) 
-        [rmse.(sprintf('x_%s',s)),rmse.(sprintf('y_%s',s))] ... 
-            = calc_rmse_xy(ts.(sprintf('%s_resample',s)), ts.(sprintf('gnd_resample_%s',s))); 
-        [rmse.(sprintf('x_ts_%s',s)),rmse.(sprintf('y_ts_%s',s))] ... 
-            = calc_rmse_ts_xy(ts.(sprintf('%s_resample',s)), ts.(sprintf('gnd_resample_%s',s))); 
-    end 
+        %% Resample to get matching time vectors 
+        for s = suffix(2:size(suffix,2))
+            [ts.(sprintf('gnd_resample_%s',s)),ts.(sprintf('%s_resample',s))] ...
+                = synchronize(ts.gnd, ts.(s),'Union');
+        end
 
-    print_rmse(suffix,rmse); 
-    %% Plot output 
-    colors = ['g','m','b','r']; 
-
-    close all;
-    figure; 
-    hold on; 
-        for i = 1:size(suffix,2)
-            scatter(ts.(suffix(i)).Data(:,1),ts.(suffix(i)).Data(:,2),colors(i)); 
-        end   
-        title('Position in World Frame'); 
-        xlabel('X Position'); ylabel('Y Position'); 
-        legend('Ground Truth','Visual+Inertial Fused','Inertial','Visual','Location','northwest'); 
-    hold off; 
-
-    figure; 
-    hold on; 
-        for i = 1:size(suffix,2)
-            plot(ts.(suffix(i)).Time,ts.(suffix(i)).Data(:,1),colors(i),'LineWidth',5); 
-        end  
-        title('X Position vs Time'); 
-        xlabel('Time (s)'); ylabel('X Position'); 
-        legend('Ground Truth','Visual+Inertial Fused','Inertial','Visual','Location','northwest'); 
-    hold off; 
-
-    figure; 
-    hold on;
-        for i = 1:size(suffix,2)
-            plot(ts.(suffix(i)).Time,ts.(suffix(i)).Data(:,2),colors(i),'LineWidth',5); 
+        %% Calculate RMSE 
+        rmse = struct;  
+        for s = suffix(2:size(suffix,2)) 
+            [rmse.(sprintf('x_%s',s)),rmse.(sprintf('y_%s',s))] ... 
+                = calc_rmse_xy(ts.(sprintf('%s_resample',s)), ts.(sprintf('gnd_resample_%s',s))); 
+            %[rmse.(sprintf('x_ts_%s',s)),rmse.(sprintf('y_ts_%s',s))] ... 
+            %    = calc_rmse_ts_xy(ts.(sprintf('%s_resample',s)), ts.(sprintf('gnd_resample_%s',s))); 
         end 
-        title('Y Position vs Time'); 
-        xlabel('Time (s)'); ylabel('Y Position'); 
-        legend('Ground Truth','Visual+Inertial Fused','Inertial','Visual','Location','northwest'); 
-    hold off; 
+
+        print_rmse(suffix,rmse); 
+        %% Plot output 
+        colors = ['g','m','b','r']; 
+
+        close all;
+        figure; 
+        hold on; 
+            for i = 1:size(suffix,2)
+                scatter(ts.(suffix(i)).Data(:,1),ts.(suffix(i)).Data(:,2),colors(i)); 
+            end   
+            title('Position in World Frame'); 
+            xlabel('X Position'); ylabel('Y Position'); 
+            legend('Ground Truth','Visual+Inertial Fused','Inertial','Visual','Location','northwest'); 
+        hold off; 
+
+        figure; 
+        hold on; 
+            for i = 1:size(suffix,2)
+                plot(ts.(suffix(i)).Time,ts.(suffix(i)).Data(:,1),colors(i),'LineWidth',5); 
+            end  
+            title('X Position vs Time'); 
+            xlabel('Time (s)'); ylabel('X Position'); 
+            legend('Ground Truth','Visual+Inertial Fused','Inertial','Visual','Location','northwest'); 
+        hold off; 
+
+        figure; 
+        hold on;
+            for i = 1:size(suffix,2)
+                plot(ts.(suffix(i)).Time,ts.(suffix(i)).Data(:,2),colors(i),'LineWidth',5); 
+            end 
+            title('Y Position vs Time'); 
+            xlabel('Time (s)'); ylabel('Y Position'); 
+            legend('Ground Truth','Visual+Inertial Fused','Inertial','Visual','Location','northwest'); 
+        hold off; 
 
 
-    clearvars -except rmse ts model location have_vis
-    save(sprintf("/home/josh/Matlab/Datasets/%s_%s.mat",location,model))
+        clearvars -except rmse ts model location have_vis models
+        save(sprintf("/home/josh/Matlab/Datasets/%s_%s.mat",location,model))
+    end
 end
 %% Helper functions
 function [rmse_ts_x, rmse_ts_y] = calc_rmse_ts_xy(est, gnd)
