@@ -1,0 +1,17 @@
+[vidpath, vidscale] = track_turtlebot('/home/josh/turtlebotdrive.mp4'); 
+vidpath.Data = (vidpath.Data - vidpath.Data(1,:))*0.1/37; 
+
+%%
+rosbag1 = rosbag('/home/josh/turtlebotdrive.bag'); 
+rosbag_odom = select(rosbag1,'Topic','localization/odom');
+rosbag_vio = select(rosbag1,'Topic','localization/odom');
+rosbag_odom = select(rosbag1,'Topic','localization/odom');
+odompath = timeseries(rosbag_odom,'Pose.Pose.Position.X','Pose.Pose.Position.Y');  
+
+%%
+close all; 
+figure; 
+plot(vidpath.Data(:,2),vidpath.Data(:,1)); 
+hold on;  
+plot(odompath.Data(:,1),odompath.Data(:,2)); 
+legend("video tracked","odometry tracked"); 

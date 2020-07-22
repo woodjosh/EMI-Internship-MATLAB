@@ -1,8 +1,9 @@
-%% Track a Face in Scene
+function [path, scale] = track_turtlebot(filename)
+
 % Create System objects for reading and displaying video and for drawing a bounding 
 % box of the object. 
 close all; 
-videoReader = VideoReader('testdrive.mp4');
+videoReader = VideoReader(filename);
 videoPlayer = vision.VideoPlayer('Position',[100,100,680,520]);
 
 % Read the first video frame, which contains the object, define the region.
@@ -16,7 +17,8 @@ close;
 figure('WindowState','fullscreen'); imshow(objectFrame); 
 title("Draw line across white circle"); 
 scale=round(getPosition(imline));
-fprintf("%3.1f pixels = 10cm\n",pdist(scale)); 
+fprintf("%3.1f pixels = .1 m\n",pdist(scale)); 
+scale = pdist(scale); 
 close; 
 % Show initial frame with a red bounding box.
 objectImage = insertShape(objectFrame,'Rectangle',objectRegion,'Color','red'); 
@@ -64,3 +66,5 @@ end
 
 % Release the video player.
 release(videoPlayer);
+path = ts_raw;
+end
