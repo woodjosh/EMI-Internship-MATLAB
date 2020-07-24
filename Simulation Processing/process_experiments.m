@@ -4,7 +4,7 @@
 % path to folder containing datasets 
 path = "/home/josh/catkin_ws/src/my_pkgs/outputs";
 % create datastore
-ds = fileDatastore(fullfile(path),'ReadFcn',@load_rosbag,'FileExtensions','.bag');
+ds = fileDatastore(fullfile(path),'ReadFcn',@load_sim_rosbag,'FileExtensions','.bag');
 
 % create struct array to hold all experiments in the folder
 % first results are in last position to initialize the array efficiently 

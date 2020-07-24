@@ -1,4 +1,4 @@
-function data = load_rosbag(filename)
+function data = load_sim_rosbag(filename)
     data = struct; 
     %% get the data 
     % parse info from filename 
