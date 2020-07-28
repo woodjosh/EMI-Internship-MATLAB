@@ -1,15 +1,15 @@
 %% Load Dataset
-load("/home/josh/TurtlebotTrials/07.24.mat"); 
+load("/home/josh/TurtlebotTrials/27-Jul-2020.mat"); 
 close all; 
 % get unique models from experiment dataset
 trials = unique([experiments.trial]);
 
 % plot 
-plot_all_paths(experiments,trials); 
-
+%plot_all_paths(experiments,trials); 
+% 
 plot_all_RMSE_time(experiments,trials); 
-
-%plot_vs_time(experiments,1); 
+% 
+%plot_vs_time(experiments,3); 
 %% Helper Functions
 function plot_all_RMSE_time(experiments,trials) 
     figure; 
@@ -28,7 +28,8 @@ function plot_vs_time(experiments,trial)
     gnd = experiments(trial).ts.gnd; 
     imu_enc = experiments(trial).ts.imu_enc; 
     vis = experiments(trial).ts.vis; 
-    vio = experiments(trial).ts.vis; 
+    vio = experiments(trial).ts.vio; 
+    axis([min(gnd.Data(:,1))-0.3, max(gnd.Data(:,1))+0.3, min(gnd.Data(:,2))-0.3, max(gnd.Data(:,2))+0.3]);
     for time = experiments(trial).ts.gnd.Time'
        hold on; 
        plot(gnd.Data(gnd.Time < time,1),gnd.Data(gnd.Time < time,2),'g'); 
@@ -36,7 +37,7 @@ function plot_vs_time(experiments,trial)
        plot(vio.Data(vio.Time < time,1),vio.Data(vio.Time < time,2),'m');
        plot(vis.Data(vis.Time < time,1),vis.Data(vis.Time < time,2),'r');
        pause(0.001); 
-    end
+  end
 end
 
 function plot_RMSE_time(experiments,trial,dir)
@@ -44,7 +45,7 @@ function plot_RMSE_time(experiments,trial,dir)
     imu_enc = [subset.(sprintf("%s_ts_imu_enc",dir))];
     vis = [subset.(sprintf("%s_ts_vis",dir))];
     vio = [subset.(sprintf("%s_ts_vio",dir))];
-
+    imu_enc.Name = sprintf("Trial %d",trial); 
     plot(imu_enc,'b','LineWidth',3);
     hold on; 
     plot(vis,'r','LineWidth',3); 
@@ -68,7 +69,7 @@ function plot_all_paths(experiments,trials)
         plot(experiments(n).ts.vis.Data(:,1),experiments(n).ts.vis.Data(:,2),'r','LineWidth',3)
         hold on 
         plot(experiments(n).ts.vio.Data(:,1),experiments(n).ts.vio.Data(:,2),'m','LineWidth',3)
-
+        title(sprintf("Trial %d",experiments(n).trial)); 
         axis([-0.2 1.2 -1 1]);
     end 
 end

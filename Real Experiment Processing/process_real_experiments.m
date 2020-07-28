@@ -1,6 +1,6 @@
 % Processes all files in the my_pkgs/datasets folder 
 % Stores all information in one struct 
-
+clear; 
 % path to folder containing datasets 
 path = "/home/josh/TurtlebotTrials";
 % create datastore
@@ -24,6 +24,6 @@ end
 % save as .mat file 
 clearvars -except experiments
 
-save("/home/josh/TurtlebotTrials/07.24.mat")
+save(sprintf("/home/josh/TurtlebotTrials/%s.mat",date))
 
 beep; 

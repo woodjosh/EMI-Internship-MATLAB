@@ -16,26 +16,20 @@ while tryagain
     close all; 
     % Get user input to define region and scale
     figure('WindowState','fullscreen'); imshow(objectFrame);  
-    title("Draw box around object to track"); 
+    title("Draw box around QR code"); 
     objectRegion=round(getPosition(imrect));
     close; 
-    % Show initial frame with a red bounding box.
-    objectImage = insertShape(objectFrame,'Rectangle',objectRegion,'Color','red'); 
-    figure;
-
-    imshow(objectImage);
-    title('Red box shows object region');
 
     % Detect interest points in the object region.
     points = detectMinEigenFeatures(rgb2gray(objectFrame),'ROI',objectRegion);
 
     % Display the detected points.
-    pointImage = insertMarker(objectFrame,points.Location,'+','Color','white');
+    pointImage = insertMarker(objectFrame,points.Location,'+','Color','green');
     pos = mean(points.Location(:,:)); 
-    pointImage = insertMarker(pointImage,pos,'x','Color','blue','Size',5); 
-    figure;
-    imshow(pointImage);
-    title('Detected interest points');
+    pointImage = insertShape(pointImage,'FilledCircle',[pos 6],'Color','blue','Opacity',1); 
+    
+    figure('WindowState','fullscreen');imshow(pointImage);
+    title('Detected interest points and robot center');
     
     % Ask user if the interest points are acceptable 
     f = figure;
@@ -49,7 +43,7 @@ while tryagain
     d.Callback = @noButton; 
     d.Position = [300 200 100 100]; 
     
-    annotation('textbox', [0.28 0.8 0 0], 'String', 'Are the detected interest points correct?', 'FitBoxToText', true);
+    annotation('textbox', [0.28 0.8 0 0], 'String', 'Is the center of the robot correct?', 'FitBoxToText', true);
     uiwait(f);  
  
 end
@@ -66,7 +60,7 @@ end
         end
 
 figure('WindowState','fullscreen'); imshow(objectFrame); 
-title("Draw line across white circle for scale"); 
+title("Draw line across QR code for scale"); 
 scale=round(getPosition(imline));
 scale = pdist(scale); 
 close; 
@@ -91,7 +85,7 @@ while hasFrame(videoReader)
       
       % display results 
       out = insertMarker(frame,points(validity, :),'+');
-      out = insertMarker(out,pos,'x','Color','blue','Size',5); 
+      out = insertShape(out,'FilledCircle',[pos 6],'Color','blue','Opacity',1); 
       videoPlayer(out);
       
       % add results to timeseries
