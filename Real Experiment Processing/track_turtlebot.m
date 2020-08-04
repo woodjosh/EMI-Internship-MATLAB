@@ -10,8 +10,24 @@ videoPlayer = vision.VideoPlayer('Position',[100,100,680,520]);
 objectFrame = readFrame(videoReader);
 
 tryagain = true; 
-
+nextFrame = true; 
 % keep trying to get user input as long as user wants
+figure('WindowState','fullscreen'); imshow(objectFrame);
+while nextFrame
+    imshow(objectFrame); 
+    title("Press spacebar until desired start frame. Then press enter."); 
+    waitforbuttonpress; 
+    value = double(get(gcf,'CurrentCharacter'));
+    
+    if value == 32
+        objectFrame = readFrame(videoReader); 
+        nextFrame = true; 
+    elseif value == 13 
+        nextFrame = false; 
+    end
+end
+
+
 while tryagain
     close all; 
     % Get user input to define region and scale
@@ -21,13 +37,13 @@ while tryagain
     close; 
 
     % Detect interest points in the object region.
-    points = detectMinEigenFeatures(rgb2gray(objectFrame),'ROI',objectRegion);
-
+    points = detectFASTFeatures(rgb2gray(objectFrame),'ROI',objectRegion);
+        
     % Display the detected points.
     pointImage = insertMarker(objectFrame,points.Location,'+','Color','green');
     pos = mean(points.Location(:,:)); 
     pointImage = insertShape(pointImage,'FilledCircle',[pos 6],'Color','blue','Opacity',1); 
-    
+
     figure('WindowState','fullscreen');imshow(pointImage);
     title('Detected interest points and robot center');
     
@@ -65,7 +81,6 @@ scale=round(getPosition(imline));
 scale = pdist(scale); 
 close; 
 
- 
 % Create a tracker object.
 tracker = vision.PointTracker('MaxBidirectionalError',1);
  
@@ -74,7 +89,6 @@ initialize(tracker,points.Location,objectFrame);
 
 % Read, track, display points, and results in each video frame.
 ts_raw = timeseries(pos,videoReader.currentTime); 
-i = 2; 
 while hasFrame(videoReader)
       % read next frame, track points
       frame = readFrame(videoReader);
@@ -83,13 +97,15 @@ while hasFrame(videoReader)
       % calculate centroid with means
       pos = mean(points(validity,:)); 
       
-      % display results 
-      out = insertMarker(frame,points(validity, :),'+');
-      out = insertShape(out,'FilledCircle',[pos 6],'Color','blue','Opacity',1); 
-      videoPlayer(out);
-      
-      % add results to timeseries
-      ts_raw = addsample(ts_raw,'Data',pos,'Time',videoReader.currentTime);
+      if ~isnan(pos)
+          % display results 
+          out = insertMarker(frame,points(validity, :),'+');
+          out = insertShape(out,'FilledCircle',[pos 6],'Color','blue','Opacity',1); 
+          videoPlayer(out);
+
+          % add results to timeseries
+          ts_raw = addsample(ts_raw,'Data',pos,'Time',videoReader.currentTime);
+      end
 end
 
 % Release the video player.

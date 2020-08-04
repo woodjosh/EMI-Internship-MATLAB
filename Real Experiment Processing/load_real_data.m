@@ -7,7 +7,7 @@ function data = load_real_data(filename)
     
     % Get path from video 
     prefix = extractBetween(filename,1,k);
-    vidfilename = sprintf("%smp4",prefix{1}); 
+    vidfilename = sprintf("%smp4",prefix{1});
     [data.ts.gnd, vidscale] = track_turtlebot(vidfilename); 
     % make starting point 0,0 and scale to meters 
     data.ts.gnd.Data = (data.ts.gnd.Data - data.ts.gnd.Data(1,:))*0.1/vidscale; 

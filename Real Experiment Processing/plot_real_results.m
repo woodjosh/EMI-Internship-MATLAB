@@ -1,15 +1,15 @@
 %% Load Dataset
-load("/home/josh/TurtlebotTrials/27-Jul-2020.mat"); 
+load("/home/josh/TurtlebotTrials/28-Jul-2020.mat"); 
 close all; 
 % get unique models from experiment dataset
 trials = unique([experiments.trial]);
 
 % plot 
-%plot_all_paths(experiments,trials); 
+plot_all_paths(experiments,trials); 
 % 
-plot_all_RMSE_time(experiments,trials); 
+%plot_all_RMSE_time(experiments,trials); 
 % 
-%plot_vs_time(experiments,3); 
+%plot_vs_time(experiments,1); 
 %% Helper Functions
 function plot_all_RMSE_time(experiments,trials) 
     figure; 
