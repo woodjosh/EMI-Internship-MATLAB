@@ -95,9 +95,9 @@ while hasFrame(videoReader)
       [points,validity] = tracker(frame);
       
       % calculate centroid with means
-      pos = mean(points(validity,:)); 
+      pos = mean(points(validity,:));
       
-      if ~isnan(pos)
+      if all(~isnan(pos)) && size(pos,2) == 2
           % display results 
           out = insertMarker(frame,points(validity, :),'+');
           out = insertShape(out,'FilledCircle',[pos 6],'Color','blue','Opacity',1); 
